@@ -1,0 +1,48 @@
+#!/bin/bash
+# Bashlib is a set of commonly used functions in my scripts
+# It is intended to be sourced by a script and the functions within the
+# library to be used as scripts
+
+# Make sure that we aren't being called directly
+if test "$0" == "$BASH_SOURCE"
+then
+    echo "Cannot call bashlib directly" >&2
+    exit 1
+fi
+
+# Make sure that we aren't getting sourced more than once
+test -z "$BASHLIB_SOURCE" || return
+
+# Ignore spaces in filenames
+export BASHLIB_ORIG_IFS="$IFS"
+IFS=$(printf "\t\n")
+
+# Path to bashlib
+export BASHLIB_SOURCE=$BASH_SOURCE
+
+# It doesn't really matter what the root directory is, we can include the
+# library files relative to the root directory, and it will be accessible from
+# the caling script
+export BASHLIB_ROOT_DIR=$(dirname $BASHLIB_SOURCE)
+
+# The blmod function simply sources a bashlib module, by concatenating the
+# module name with the path
+blmod()
+{
+    local mod_name=$1
+
+    source ${BASHLIB_ROOT_DIR}/lib/${mod_name}.bash
+}
+
+# Include all modules over here
+blmod core          # Must be the first module
+blmod logging       # Better to have this early, to prevent issues with other
+                    # modules missing the logging API
+
+
+# Clean up unnecessary functions
+unset -f blmod
+
+# Revert back to original IFS
+IFS="$BASHLIB_ORIG_IFS"
+unset -v BASHLIB_ORIG_IFS
