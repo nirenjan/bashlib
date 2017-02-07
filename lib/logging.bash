@@ -17,7 +17,7 @@ BASHLIB_SYSLOG_LEVELS=(emerg alert crit err warning notice info debug)
 #######################################################################
 
 # Get the log level given the mnemonic string
-bashlib_parse_log_level_string()
+_bashlib_parse_log_level_string()
 {
     local level=$(echo $1 | tr A-Z a-z)
     local log_level=3
@@ -65,7 +65,7 @@ bashlib_parse_log_level_string()
 # Set log level - logs below this threshold will be ignored
 bashlib_set_log_level()
 {
-    bashlib_parse_log_level_string $1
+    _bashlib_parse_log_level_string $1
     BASHLIB_LOG_LEVEL=$BASHLIB_PARSED_LOG_LEVEL
     unset -v BASHLIB_PARSED_LOG_LEVEL
 }
@@ -112,7 +112,7 @@ bashlib_log()
         bashlib_throw "Insufficient number of arguments for bashlib_log"
     fi
 
-    bashlib_parse_log_level_string $1
+    _bashlib_parse_log_level_string $1
     shift
 
     if (( $BASHLIB_PARSED_LOG_LEVEL <= $BASHLIB_LOG_LEVEL ))
