@@ -17,17 +17,6 @@ debug()
     fi
 }
 
-TESTS_PASSED=0
-TESTS_FAILED_STDOUT=0
-TESTS_FAILED_STDERR=0
-TESTS_FAILED_ASSERT=0
-TESTS_FAILED_EXIT=0
-TESTS_SKIPPED=0
-
-TESTS_FAILURES=$(mktemp -t tcdiff.XXXXXXXX)
-TESTS_SKIPPED_LIST=$(mktemp -t skipped.XXXXXXXX)
-
-# Test runner core routines
 
 # Common initialization for every test case
 testcase_setup_common()
@@ -195,36 +184,101 @@ skip_test()
 
 check_status()
 {
+    # Color codes
+    local C_R="\033[0;31m"
+    local C_G="\033[0;32m"
+    local C_Y="\033[0;33m"
+    local C_B="\033[0;34m"
+    local C_N="\033[0m"
+
     status=${status:-0}
     case $status in
     0)
-        debug PASS || echo -n .
+        debug " ${C_G}PASS${C_N}" || echo -ne "${C_N}."
         ((TESTS_PASSED++))
         ;;
     1)
-        debug "FAIL <stdout>" || echo -n F
+        debug " ${C_R}FAIL <stdout>${C_N}" || echo -ne "${C_R}F"
         ((TESTS_FAILED_STDOUT++))
         ;;
     2)
-        debug "FAIL <stderr>" || echo -n E
+        debug " ${C_R}FAIL <stderr>${C_N}" || echo -ne "${C_R}E"
         ((TESTS_FAILED_STDERR++))
         ;;
     3|4)
-        debug "FAIL <assert>" || echo -n A
+        debug " ${C_R}FAIL <assert>${C_N}" || echo -ne "${C_R}A"
         ((TESTS_FAILED_ASSERT++))
         ;;
     255)
-        debug "SKIPPED" || echo -n S
+        debug " ${C_B}SKIPPED${C_N}" || echo -ne "${C_B}S"
         ((TESTS_SKIPPED++))
         ;;
     *)
-        debug "FAIL <exit_code>" || echo -n X
+        debug " ${C_Y}FAIL <exit_code>${C_N}" || echo -ne "${C_Y}X"
         ((TESTS_FAILED_EXIT++))
         ;;
     esac
 
     unset status
 }
+
+cli_help()
+{
+cat <<EOH
+Usage: run_tests.sh [OPTIONS]
+
+Options:
+--------
+    -d [level]      Set the tests debug level. If unspecified,
+                    level defaults to 1. Must be between 1 and 9
+
+    -h              Display this message
+
+EOH
+}
+
+TESTS_PASSED=0
+TESTS_FAILED_STDOUT=0
+TESTS_FAILED_STDERR=0
+TESTS_FAILED_ASSERT=0
+TESTS_FAILED_EXIT=0
+TESTS_SKIPPED=0
+
+TESTS_FAILURES=$(mktemp -t tcdiff.XXXXXXXX)
+TESTS_SKIPPED_LIST=$(mktemp -t skipped.XXXXXXXX)
+
+# Add command line options to turn on test debugging
+while getopts :d:h opt
+do
+    case $opt in
+    d)
+        TESTS_DEBUG=$OPTARG
+        if [[ ! "$TESTS_DEBUG" =~ ^[1-9]$ ]]
+        then
+            echo "Invalid debug level '$TESTS_DEBUG'" >&2
+            exit 1
+        fi
+        ;;
+
+    h)
+        cli_help
+        exit 0
+        ;;
+
+    :)
+        if [[ "$OPTARG" == "d" ]]
+        then
+            TESTS_DEBUG=1
+        fi
+        ;;
+
+    \?)
+        echo "Unrecognized option -$OPTARG" >&2
+        exit 1
+        ;;
+    esac
+done
+
 # Search for all test files under the test folder
 for testfile in $(find $TESTS_DIR -name '.*' -prune -o -type f -print)
 do
@@ -246,7 +300,10 @@ if [ $TESTS_SKIPPED -gt 0 ]
 then
     echo "Tests Skipped = $TESTS_SKIPPED"
 fi
-echo "Total Tests = $(($TESTS_PASSED + $TESTS_FAILED_STDOUT + $TESTS_FAILED_STDERR + $TESTS_FAILED_ASSERT + $TESTS_FAILED_EXIT + $TESTS_SKIPPED))"
+TESTS_FAILED=$(($TESTS_FAILED_STDOUT + $TESTS_FAILED_STDERR + $TESTS_FAILED_ASSERT + $TESTS_FAILED_EXIT))
+TESTS_TOTAL=$(($TESTS_PASSED + $TESTS_FAILED + $TESTS_SKIPPED))
+TESTS_TOTAL_NO_SKIPS=$(($TESTS_TOTAL - $TESTS_SKIPPED))
+echo "Total Tests = $TESTS_TOTAL"
 
 if [[ -s "$TESTS_SKIPPED_LIST" ]]
 then
@@ -274,4 +331,12 @@ fi
 
 rm -f "$TESTS_FAILURES"
 rm -f "$TESTS_SKIPPED_LIST"
+
+# Allow for a return failure code if there were any test failures
+if [ $TESTS_FAILED -gt 0 ]
+then
+    exit 1
+else
+    exit 0
+fi
 
