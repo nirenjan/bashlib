@@ -63,7 +63,7 @@ _bashlib_parse_log_level_string()
 }
 
 # Set log level - logs below this threshold will be ignored
-bashlib_set_log_level()
+bashlib_log_set_level()
 {
     _bashlib_parse_log_level_string $1
     BASHLIB_LOG_LEVEL=$BASHLIB_PARSED_LOG_LEVEL
@@ -71,7 +71,7 @@ bashlib_set_log_level()
 }
 
 # Set log destination
-bashlib_set_log_dest()
+bashlib_log_set_dest()
 {
     local dest=$(echo $1 | tr A-Z a-z)
     local logfile=$2
@@ -132,6 +132,6 @@ bashlib_log()
 }
 
 # Set default parameters for logging
-bashlib_set_log_dest stdout
-bashlib_set_log_level err
+bashlib_log_set_dest stdout
+bashlib_log_set_level err
 

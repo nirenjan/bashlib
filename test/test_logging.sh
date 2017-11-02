@@ -40,7 +40,7 @@ blt_helper_logging_test()
     local expected=$2
 
     # Configure logging level
-    bashlib_set_log_level $set_level
+    bashlib_log_set_level $set_level
 
     for level in ${BASHLIB_SYSLOG_LEVELS[@]}
     do
@@ -120,21 +120,21 @@ bl_test_logging_test_cfg_debug()
 
 bl_test_logging_dest_stdout()
 {
-    bashlib_set_log_dest stdout
+    bashlib_log_set_dest stdout
     expect_stdout 'echo "%.0s%s: %s" >&1'
     echo $BASHLIB_LOG_FORMAT
 }
 
 bl_test_logging_dest_stderr()
 {
-    bashlib_set_log_dest stderr
+    bashlib_log_set_dest stderr
     expect_stdout 'echo "%.0s%s: %s" >&2'
     echo $BASHLIB_LOG_FORMAT
 }
 
 bl_test_logging_dest_syslog()
 {
-    bashlib_set_log_dest syslog
+    bashlib_log_set_dest syslog
     expect_stdout 'logger -p user.%s -t %s "%s"'
     echo $BASHLIB_LOG_FORMAT
 }
@@ -144,13 +144,13 @@ bl_test_logging_dest_file_1()
     bashlib_stacktrace_disable
     expect_raise 42
     expect_stderr 'bashlib: Missing required parameter - logfile'
-    bashlib_set_log_dest file
+    bashlib_log_set_dest file
 }
 
 bl_test_logging_dest_file_2()
 {
     expect_stdout 'echo "%.0s%s: %s" >>"foo"'
-    bashlib_set_log_dest file foo
+    bashlib_log_set_dest file foo
     echo $BASHLIB_LOG_FORMAT
 }
 
@@ -159,5 +159,5 @@ bl_test_logging_dest_invalid()
     bashlib_stacktrace_disable
     expect_raise 42
     expect_stderr "bashlib: Invalid log destination 'foo'"
-    bashlib_set_log_dest foo
+    bashlib_log_set_dest foo
 }
